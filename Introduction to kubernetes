@@ -1,0 +1,28 @@
+DevOps engineers encounter when managing Kubernetes clusters in production: **resource sharing**, **handling Out of Memory (OOM) killed errors**, and **performing cluster upgrades**. Addressing these scenarios is essential for demonstrating genuine operational experience during professional interviews.
+
+### 1. Resource Sharing and Allocation
+In a production environment, multiple teams or microservices typically share a single Kubernetes cluster rather than having separate ones for each team. The primary challenge here is preventing one service's issues from crashing the entire system.
+
+*   **The Problem:** If a service has a memory leak, it can consume all available cluster resources, leading to a large **"blast radius"** where unrelated services in other namespaces crash due to lack of memory.
+*   **The Solution:** DevOps engineers use a two-tiered approach to restrict this blast radius:
+    *   **Resource Quotas:** Applied at the **namespace level**, these set a hard limit on the total CPU and RAM all services in that namespace can consume together.
+    *   **Resource Limits:** Applied at the **pod level**, these define the maximum resources a specific pod can use. 
+*   **Implementation:** Engineers should work with development teams to perform **performance benchmarking** to determine accurate resource needs. By setting both quotas and limits, if a pod leaks memory, it will only crash itself rather than affecting the namespace or the whole cluster.
+
+### 2. Resolving OOM Killed Issues
+Even with proper limits, pods may still fail with an **OOMKilled** error (often appearing as a `CrashLoopBackOff` status). This scenario explains how to troubleshoot such failures once resource limits are already in place.
+
+*   **Identification:** While `kubectl get pods` might show a generic crash status, using `kubectl describe` will reveal the specific "OOMKilled" error.
+*   **DevOps Responsibility:** Since the pod has already been allocated its benchmarked resources, the issue is likely internal to the application code. The DevOps engineer’s role is to log into the pod and extract diagnostic data, such as **Thread Dumps** and **Heap Dumps** (using commands like `kill -3` or `jstack` for Java applications).
+*   **Resolution:** This data is shared with the development team, who perform a root cause analysis to fix the leak and provide a new version of the application for deployment.
+
+### 3. Managing Kubernetes Upgrades
+Upgrading a cluster (e.g., from version 1.29 to 1.30) is a complex task that requires high caution to avoid downtime or cluster failure.
+
+*   **Preparation:** Engineers must create a detailed manual, take backups, and critically **read the release notes** to identify breaking changes, deprecated features, or APIs moving from beta to stable.
+*   **Control Plane Upgrade:** The process begins by upgrading components like **etcd**, the **API Server**, and the **Scheduler** in a specific order.
+*   **Worker Node (Data Plane) Upgrade:** To maintain availability, nodes are upgraded one by one using a "drain and cordon" process:
+    *   **Drain:** Move running pods to other nodes.
+    *   **Cordon:** Mark the node as unschedulable so no new pods are placed on it.
+    *   **Upgrade:** Install the new version of **kubelet** and other packages.
+    *   **Uncordon:** Bring the node back into the cluster and repeat the process for the remaining nodes.
