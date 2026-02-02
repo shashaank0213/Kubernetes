@@ -1,0 +1,43 @@
+Kubernetes architecture, contrasting it with Docker to explain why various components are necessary. Kubernetes is defined by its ability to offer cluster-like behavior, auto-healing, auto-scaling, and advanced Enterprise support for networking and security.
+
+The architecture is fundamentally divided into two parts: the Control Plane (Master) and the Data Plane (Worker).
+
+The Data Plane: Worker Node Components
+
+The Data Plane is responsible for the actual execution of your applications. Every worker node in a cluster contains these three essential components:
+
+Kubelet: This is the primary "agent" on the node that ensures pods are running and healthy. It acts as a bridge to the Control Plane, reporting back if a pod fails so the system can initiate auto-healing.
+
+Container Runtime: This is the software responsible for actually running the containers. While Docker was once the standard, Kubernetes now supports various runtimes like containerd and CRI-O as long as they implement the Kubernetes container interface.
+
+Kube Proxy: This component manages the networking for the node. It handles IP address allocation and load balancing for pods, often utilizing IP tables on the Linux host to direct traffic.
+
+The Control Plane: Master Node Components           
+
+The Control Plane acts as the "brain" or heart of the cluster, managing its state and making global decisions.
+
+Component and Function
+
+API Server:
+
+The central hub that exposes Kubernetes to the outside world and receives all incoming requests.
+
+Scheduler:
+
+Decides which worker node is the best fit for a new pod based on available resources.
+
+etcd:
+
+A consistent key-value store used as the backing store for all cluster data and state information.
+
+Controller Manager:
+
+A daemon that manages background controllers (like replica sets) to ensure the current state of the cluster matches the desired state.
+
+Cloud Controller Manager (CCM):
+
+An optional component that links the cluster to a specific cloud provider’s API (like AWS or Azure) to manage resources like load balancers and storage.
+
+Summary of Workflow:
+
+When a user requests to create a pod, the request hits the API Server. The Scheduler identifies an available worker node, and the API Server instructs the Cubelet on that node to run the pod. The Cubelet then works with the Container Runtime to pull the image and start the container, while Kube Proxy ensures it is reachable via the network.
